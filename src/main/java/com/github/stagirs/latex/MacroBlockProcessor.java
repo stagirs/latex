@@ -31,16 +31,16 @@ import java.util.Set;
  * 
  * @author Dmitriy Malakhov
  */
-public class MacroProcessor {
-    private static final Set<String> MACRO_COMMANDS = new HashSet<String>(){{
-        add("\\newcommand");
-        add("\\renewcommand");
-        add("\\providecommand");
+public class MacroBlockProcessor {
+    private static final Set<String> MACRO_BLOCK_COMMANDS = new HashSet<String>(){{
+        add("\\newtheorem");
+        add("\\newtheorem*");
     }};
-    private final Map<String, Chain> macro2command = new HashMap<>();
+    private final Map<String, Chain> macroblock2command = new HashMap<>();
+    
     
     public static void process(Chain text){
-        new MacroProcessor().processText(text);
+        new MacroBlockProcessor().processText(text);
     }
     
     private void processText(Chain text){
@@ -48,32 +48,29 @@ public class MacroProcessor {
         for (Item item : text.getList()) {
             if(item instanceof Command){
                 Command command = (Command) item;
-                for (CommandParam commandParam : command.geParams()) {
-                    processText(commandParam.getText());
-                }
-                if(macro2command.containsKey(command.getName())){
-                    Chain copy = macro2command.get(command.getName()).getCopy();
-                    copy.replace(command);
-                    newList.addAll(copy.getList());
-                    continue;
+                if(command.getName().equals("\\begin") && command.get(0) != null){
+                    String blockName = command.get(0).getText().toString();
+                    if(macroblock2command.containsKey(blockName)){
+                        newList.add(item);
+                        newList.addAll(macroblock2command.get(blockName).getCopy().getList());
+                        continue;
+                    }
                 }
             }
             if(item instanceof Group){
                 processText(((Group) item).getText());
             }
-            if(item instanceof Command && MACRO_COMMANDS.contains(((Command) item).getName())){
-                CommandParam macro = ((Command) item).get(0);
-                CommandParam command = ((Command) item).get(1);
-                if(command == null){
+            if(item instanceof Command && MACRO_BLOCK_COMMANDS.contains(((Command) item).getName())){
+                Command command = (Command) item;
+                CommandParam macro = command.get(0);
+                CommandParam newcommand = command.get(1);
+                if(newcommand == null){
                     continue;
                 }
-                if(command.isOptional()){
-                    command = ((Command) item).get(2);
+                if(newcommand.isOptional()){
+                    newcommand = command.get(2);
                 }
-                if(!(macro.getText().get(0) instanceof Command)){
-                    continue;
-                }
-                macro2command.put(macro.getText().get(Command.class, 0).getName(), command.getText());
+                macroblock2command.put(macro.getText().toString(), newcommand.getText());
                 continue;
             }
             newList.add(item);

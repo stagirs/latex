@@ -47,7 +47,10 @@ public class Command implements Item{
     }
     
     public String getFirstParamText(){
-        return params.get(0).getText().toString();
+        if(params.isEmpty()){
+            return "";
+        }
+        return params.get(0).getText().toString().trim();
     }
     
     public CommandParam get(int i){

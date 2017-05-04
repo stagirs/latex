@@ -7,16 +7,20 @@ import com.github.stagirs.latex.lexical.item.Comment;
 import com.github.stagirs.latex.lexical.item.Group;
 import com.github.stagirs.latex.lexical.item.Placeholder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class LatexLexicalAnalyzer {
+    Set<String> commangWithoutArgs = new HashSet<>(Arrays.asList("\\Bigl", "\\sigma", "\\delta", "\\beta", "\\gamma", "\\varepsilon", "\\cap", "\\cup", "\\ref", "\\alpha", "\\infty", "\\in", "\\subset", "\\to", "\\times", "\\biggl", "\\left", "\\right"));
     //секции, где не нужен $$: eqnarray equation 
     
     private Iterator i;
 
     public static Chain parse(String text) {
-        text = text.replace("\r", "");
+        text = text.replace("\r\n", "\n").replace("\n\r", "\n").replace("\r", "\n");
         LatexLexicalAnalyzer lla = new LatexLexicalAnalyzer();
         lla.i = new Iterator(text);
         return lla.processText(null);
@@ -42,6 +46,7 @@ public class LatexLexicalAnalyzer {
                     if(i.hasNext() && i.next(1) == '\n'){
                         text.add(new Command("\n\n", Collections.EMPTY_LIST, false));
                     }
+                    text.append(' ');
                     break;    
                 case '{': text.add(new Group(processText('}'))); break;
                 case '\\': text.add(processCommand()); break;
@@ -61,24 +66,42 @@ public class LatexLexicalAnalyzer {
         boolean star = false;
         if(Character.isLetter(c)){
             boolean eq = false;
+            boolean endName = false;
+            boolean space = false;
             while(i.hasNext()){
                 c = i.next();
                 switch(c){
-                    case '{': params.add(new CommandParam(processText('}'), false)); break;
-                    case '[': params.add(new CommandParam(processText(']'), true)); break;
+                    case '{': 
+                        endName = true;
+                        params.add(new CommandParam(processText('}'), false)); 
+                        break;
+                    case '[': 
+                        endName = true;
+                        if(space || params.isEmpty()){
+                            i.prev();
+                            return new Command(name.toString(), params, star);
+                        }
+                        params.add(new CommandParam(processText(']'), true)); 
+                        break;
                     case '=': eq = true; name.append(c); break;
                     case '*': star = true; break;
+                    case ' ': space = endName = true; break;
                     default:
-                        if(Character.isLetter(c)){
-                            name.append(c);
+                        if(endName){
+                            i.prev();
+                            return new Command(name.toString(), params, star);
                         }else{
-                            if(eq && Character.isDigit(c)){
+                            if(Character.isLetter(c) || c == '_'){
                                 name.append(c);
                             }else{
-                                i.prev();
-                                return new Command(name.toString(), params, star);
+                                if(eq && Character.isDigit(c)){
+                                    name.append(c);
+                                }else{
+                                    i.prev();
+                                    return new Command(name.toString(), params, star);
+                                }
                             }
-                        }
+                        }  
                 }
             }
         }    

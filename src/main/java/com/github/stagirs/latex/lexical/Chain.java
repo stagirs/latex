@@ -34,8 +34,9 @@ public class Chain{
     }
     
     public Chain flush(){
-        if(current.length() != 0){
-            list.add(new PlainText(current.toString()));
+        String str = current.toString();
+        if(str.trim().length() != 0){
+            list.add(new PlainText(str));
             current = new StringBuilder();
         }
         return this;
@@ -62,7 +63,10 @@ public class Chain{
         List<Item> list = new ArrayList();
         for (Item item : this.list) {
             if(item instanceof Placeholder){
-                list.addAll(command.geParams().get(((Placeholder)item).getIndex() - 1).getText().getCopy().getList());
+                int paramIndex = ((Placeholder)item).getIndex() - 1;
+                if(command.geParams().size() > paramIndex){
+                    list.addAll(command.geParams().get(paramIndex).getText().getCopy().getList());
+                }
             }else if(item instanceof Command){
                 for(CommandParam cp : ((Command)item).geParams()){
                     cp.getText().replace(command);
