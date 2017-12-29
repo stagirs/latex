@@ -27,7 +27,7 @@ public class LatexLexicalAnalyzerTest {
         assertEquals(text.size(), 3);
         assertEquals(text.toString(), "\\righthyphenmin=2% comment text \n\\righthyphenmin=3");
         text = LatexLexicalAnalyzer.parse("\\begin{equation} \\label{e8} |\\chi_S(r)-np_{r}|\\le \\Delta_{r},\n \\end {equation}");
-        assertEquals(text.size(), 13);
+        assertEquals(text.size(), 11);
         text = LatexLexicalAnalyzer.parse("\\label{begin}\n" +
                                                 "\n" +
                                                 "\n" +
